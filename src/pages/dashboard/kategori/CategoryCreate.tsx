@@ -15,6 +15,7 @@ type FormData = z.infer<typeof schema>;
 export default function CategoryCreate() {
   const navigate = useNavigate();
 
+  // Memanggil fungsi dari global store Zustand
   const createCategory = useAuthStore(
     (s: any) => s.createCategory
   );
@@ -28,14 +29,11 @@ export default function CategoryCreate() {
   });
 
   const onSubmit = async (data: FormData) => {
-
-    const success = await createCategory(
-      data.name
-    );
+    // Mengirim nama kategori ke fungsi store
+    const success = await createCategory(data.name);
 
     if (success) {
       alert("Kategori berhasil dibuat!");
-
       navigate("/dashboard/category");
     } else {
       alert("Gagal membuat kategori");
@@ -44,30 +42,24 @@ export default function CategoryCreate() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
-
       <div className="max-w-2xl mx-auto">
-
+        
         {/* HEADER */}
         <div className="mb-8">
-
           <h1 className="text-3xl font-bold text-[#7B1D3F]">
             Tambah Kategori
           </h1>
-
           <p className="text-gray-500 mt-2">
             Isi data kategori event kamu
           </p>
-
         </div>
 
         {/* CARD */}
         <div className="bg-white rounded-2xl shadow-md p-8 border border-gray-100">
-
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-6"
           >
-
             {/* INPUT NAMA */}
             <Input
               label="Nama Category"
@@ -79,7 +71,6 @@ export default function CategoryCreate() {
 
             {/* BUTTON */}
             <div className="pt-2">
-
               <Button
                 title={
                   isSubmitting
@@ -89,12 +80,10 @@ export default function CategoryCreate() {
                 type="submit"
                 variant="primary"
               />
-
             </div>
-
           </form>
-
         </div>
+
       </div>
     </div>
   );

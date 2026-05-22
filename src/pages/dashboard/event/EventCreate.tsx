@@ -1,12 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Input from "../../../component/ui/Input";
 import Button from "../../../component/ui/Button";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuthStore } from "../../../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
 
+// VALIDASI SCHEMA (ZOD)
 const schema = z.object({
   name: z.string().min(3, "Nama event harus di isi"),
   location: z.string().min(3, "Lokasi harus di isi"),
@@ -31,22 +31,33 @@ interface SpeakerItem {
 export default function EventCreate() {
   const navigate = useNavigate();
 
-  const createEvent = useAuthStore((s: any) => s.createEvent);
+  // State Lokal untuk menampung data dropdown langsung dari API Vercel
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [speakers, setSpeakers] = useState<SpeakerItem[]>([]);
 
-  const categories = useAuthStore((s: any) => s.categories);
-  const speakers = useAuthStore((s: any) => s.speakers);
-
-  const fetchCategories = useAuthStore(
-    (s: any) => s.fetchCategories
-  );
-
-  const fetchSpeakers = useAuthStore(
-    (s: any) => s.fetchSpeakers
-  );
-
+  // Mengambil data Category dan Speaker langsung dari Backend Vercel saat halaman dibuka
   useEffect(() => {
-    fetchCategories();
-    fetchSpeakers();
+    const loadDropdownData = async () => {
+      try {
+        // Ambil Data Kategori
+        const catRes = await fetch("https://be-invofest-ten.vercel.app/categories");
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          setCategories(catData);
+        }
+
+        // Ambil Data Speaker
+        const speakRes = await fetch("https://be-invofest-ten.vercel.app/pembicara");
+        if (speakRes.ok) {
+          const speakData = await speakRes.json();
+          setSpeakers(speakData);
+        }
+      } catch (error) {
+        console.error("Gagal memuat data dropdown dari Vercel:", error);
+      }
+    };
+
+    loadDropdownData();
   }, []);
 
   const {
@@ -57,6 +68,7 @@ export default function EventCreate() {
     resolver: zodResolver(schema),
   });
 
+  // Aksi simpan langsung menembak POST ke Backend Vercel
   const onSubmit = async (data: FormData) => {
     try {
       const payload = {
@@ -68,11 +80,17 @@ export default function EventCreate() {
         speakerId: data.speakerId,
       };
 
-      console.log("PAYLOAD EVENT:", payload);
+      console.log("SENDING PAYLOAD TO VERCEL:", payload);
 
-      const success = await createEvent(payload);
+      const response = await fetch("https://be-invofest-ten.vercel.app/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (success) {
+      if (response.ok) {
         alert("Event berhasil ditambahkan");
         navigate("/dashboard/event");
       } else {
@@ -93,7 +111,6 @@ export default function EventCreate() {
           <h1 className="text-3xl font-bold text-[#7B1D3F]">
             Tambah Event
           </h1>
-
           <p className="text-gray-500 mt-2">
             Tambahkan event baru ke dalam sistem
           </p>
@@ -101,12 +118,10 @@ export default function EventCreate() {
 
         {/* CARD */}
         <div className="bg-white rounded-2xl shadow-md p-8 border border-gray-100">
-
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-6"
           >
-
             {/* NAMA EVENT */}
             <Input
               label="Nama Event"
@@ -116,20 +131,18 @@ export default function EventCreate() {
               error={errors.name?.message}
             />
 
-            {/* CATEGORY */}
+            {/* CATEGORY DROPDOWN */}
             <div className="flex flex-col gap-1">
               <label className="font-medium text-sm">
                 Category
               </label>
-
               <select
                 {...register("categoryId")}
-                className="border rounded-lg px-3 py-2"
+                className="border rounded-lg px-3 py-2 bg-white"
               >
                 <option value="">
                   Pilih Category
                 </option>
-
                 {categories?.map((cat: CategoryItem) => (
                   <option
                     key={cat.id}
@@ -139,7 +152,6 @@ export default function EventCreate() {
                   </option>
                 ))}
               </select>
-
               {errors.categoryId && (
                 <p className="text-red-500 text-sm">
                   {errors.categoryId.message}
@@ -147,20 +159,18 @@ export default function EventCreate() {
               )}
             </div>
 
-            {/* SPEAKER */}
+            {/* SPEAKER DROPDOWN */}
             <div className="flex flex-col gap-1">
               <label className="font-medium text-sm">
                 Speaker
               </label>
-
               <select
                 {...register("speakerId")}
-                className="border rounded-lg px-3 py-2"
+                className="border rounded-lg px-3 py-2 bg-white"
               >
                 <option value="">
                   Pilih Speaker
                 </option>
-
                 {speakers?.map((speaker: SpeakerItem) => (
                   <option
                     key={speaker.id}
@@ -170,7 +180,6 @@ export default function EventCreate() {
                   </option>
                 ))}
               </select>
-
               {errors.speakerId && (
                 <p className="text-red-500 text-sm">
                   {errors.speakerId.message}
@@ -178,7 +187,7 @@ export default function EventCreate() {
               )}
             </div>
 
-            {/* LOCATION */}
+            {/* LOKASI */}
             <Input
               label="Lokasi"
               name="location"
@@ -187,18 +196,16 @@ export default function EventCreate() {
               error={errors.location?.message}
             />
 
-            {/* DATE */}
+            {/* TANGGAL */}
             <div className="flex flex-col gap-1">
               <label className="font-medium text-sm">
                 Tanggal Event
               </label>
-
               <input
                 type="date"
                 {...register("dateEvent")}
                 className="border rounded-lg px-3 py-2"
               />
-
               {errors.dateEvent && (
                 <p className="text-red-500 text-sm">
                   {errors.dateEvent.message}
@@ -206,19 +213,17 @@ export default function EventCreate() {
               )}
             </div>
 
-            {/* DESCRIPTION */}
+            {/* DESKRIPSI */}
             <div className="flex flex-col gap-1">
               <label className="font-medium text-sm">
                 Description
               </label>
-
               <textarea
                 {...register("description")}
                 rows={4}
                 placeholder="Masukkan deskripsi event"
                 className="border rounded-lg px-3 py-2"
               />
-
               {errors.description && (
                 <p className="text-red-500 text-sm">
                   {errors.description.message}
@@ -226,7 +231,7 @@ export default function EventCreate() {
               )}
             </div>
 
-            {/* BUTTON */}
+            {/* BUTTON SIMPAN */}
             <div className="pt-4">
               <Button
                 title={

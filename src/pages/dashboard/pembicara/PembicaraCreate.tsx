@@ -18,7 +18,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function PembicaraCreate() {
-
   const navigate = useNavigate();
 
   const token = useAuthStore((state: any) => state.token);
@@ -34,11 +33,10 @@ export default function PembicaraCreate() {
 
   // SUBMIT
   const onSubmit = async (data: FormData) => {
-
     try {
-
+      // Mengubah URL localhost menjadi URL Backend Vercel asli
       const response = await fetch(
-        "http://localhost:3000/pembicara",
+        "https://be-invofest-ten.vercel.app/pembicara",
         {
           method: "POST",
           headers: {
@@ -54,48 +52,34 @@ export default function PembicaraCreate() {
       }
 
       alert("Pembicara berhasil ditambahkan!");
-
       reset();
-
       navigate("/dashboard/pembicara");
-
     } catch (error) {
-
       console.log(error);
-
       alert("Gagal menambahkan pembicara");
-
     }
-
   };
 
   return (
-
     <div className="min-h-screen bg-gray-100 py-10 px-4">
-
       <div className="max-w-3xl mx-auto">
-
+        
         {/* HEADER */}
         <div className="mb-8">
-
           <h1 className="text-3xl font-bold text-[#7B1D3F]">
             Tambah Pembicara
           </h1>
-
           <p className="text-gray-500 mt-2">
             Isi data pembicara untuk event
           </p>
-
         </div>
 
         {/* CARD */}
         <div className="bg-white rounded-2xl shadow-md p-8 border border-gray-100">
-
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-6"
           >
-
             {/* NAMA */}
             <Input
               label="Nama Pembicara"
@@ -128,7 +112,6 @@ export default function PembicaraCreate() {
 
             {/* BUTTON */}
             <div className="pt-2">
-
               <Button
                 type="submit"
                 title={
@@ -138,17 +121,11 @@ export default function PembicaraCreate() {
                 }
                 variant="primary"
               />
-
             </div>
-
           </form>
-
         </div>
 
       </div>
-
     </div>
-
   );
-
 }

@@ -28,6 +28,7 @@ interface EventItem {
 interface AuthState {
   isAuthenticated: boolean;
   user: string | null;
+  token: string | null; // Tambahan state token agar sinkron dengan pengaman backend
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 
@@ -52,13 +53,15 @@ interface AuthState {
   deleteEvent: (id: string) => Promise<boolean>;
 }
 
-const API_URL = "http://localhost:3000";
+// MENGUBAH ALAMAT URL UTAMA KE BACKEND VERCEL PRODUKSI
+const API_URL = "https://be-invofest-ten.vercel.app";
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
       user: null,
+      token: null,
       categories: [],
       speakers: [],
       events: [],
@@ -75,7 +78,12 @@ export const useAuthStore = create<AuthState>()(
 
           if (response.ok) {
             const data = await response.json();
-            set({ isAuthenticated: true, user: data.name || email });
+            // Menyimpan state auth dan token (jika disuplai dari backend)
+            set({ 
+              isAuthenticated: true, 
+              user: data.name || email,
+              token: data.token || "dummy-token-invofest" 
+            });
             return true;
           }
           return false;
@@ -85,7 +93,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: () => set({ isAuthenticated: false, user: null }),
+      logout: () => set({ isAuthenticated: false, user: null, token: null }),
 
       // ================= MODUL CATEGORY EVENT =================
       fetchCategories: async () => {
@@ -158,7 +166,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await fetch(`${API_URL}/pembicara`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${get().token}`
+            },
             body: JSON.stringify(data),
           });
           if (response.ok) {
@@ -173,7 +184,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await fetch(`${API_URL}/pembicara/${id}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${get().token}`
+            },
             body: JSON.stringify(data),
           });
           if (response.ok) {
@@ -186,7 +200,10 @@ export const useAuthStore = create<AuthState>()(
 
       deleteSpeaker: async (id) => {
         try {
-          const response = await fetch(`${API_URL}/pembicara/${id}`, { method: "DELETE" });
+          const response = await fetch(`${API_URL}/pembicara/${id}`, { 
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${get().token}` }
+          });
           if (response.ok) {
             await get().fetchSpeakers();
             return true;
@@ -199,7 +216,6 @@ export const useAuthStore = create<AuthState>()(
       fetchEvents: async () => {
         set({ isLoading: true });
         try {
-          // FIXED: Menggunakan /events agar klop dengan pendaftaran route backend kalian
           const response = await fetch(`${API_URL}/events`);
           if (response.ok) {
             const data = await response.json();
@@ -215,7 +231,6 @@ export const useAuthStore = create<AuthState>()(
 
       createEvent: async (data) => {
         try {
-          // FIXED: Diarahkan ke /events agar backend tidak membalas 404
           const response = await fetch(`${API_URL}/events`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -234,7 +249,6 @@ export const useAuthStore = create<AuthState>()(
 
       updateEvent: async (id, data) => {
         try {
-          // FIXED: Menggunakan /events
           const response = await fetch(`${API_URL}/events/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -250,7 +264,6 @@ export const useAuthStore = create<AuthState>()(
 
       deleteEvent: async (id) => {
         try {
-          // FIXED: Menggunakan /events
           const response = await fetch(`${API_URL}/events/${id}`, { method: "DELETE" });
           if (response.ok) {
             await get().fetchEvents();
@@ -265,6 +278,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
+        token: state.token, // Menyimpan token di localStorage agar login awet pas di-refresh
       }),
     }
   )
